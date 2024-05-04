@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Create SQLite database file and table
+sqlite3 people_data.db <<EOF
+CREATE TABLE IF NOT EXISTS people (
+    id INTEGER PRIMARY KEY,
+    full_name TEXT,
+    current_address TEXT,
+    past_addresses TEXT,
+    phone_numbers TEXT,
+    aliases TEXT,
+    relatives TEXT
+);
+EOF
+
+# Function to insert data into SQLite database
+insert_data() {
+    local data="$1"
+    sqlite3 people_data.db <<EOF
+    INSERT INTO people (full_name, current_address, past_addresses, phone_numbers, aliases, relatives)
+    VALUES ('$data');
+EOF
+}
+
+# Run w3m to retrieve webpage content and save it to a file
+w3m -cookie -dump "https://www.fastpeoplesearch.com/$1" > webpage_content.txt
+
+# Extract relevant information using sed and awk
+full_name=$(sed -n '/Full Name:/,/Current Home Address:/p' webpage_content.txt | awk 'NR==2')
+current_address=$(sed -n '/Current Home Address:/,/Past Addresses:/p' webpage_content.txt | awk 'NR==2')
+past_addresses=$(sed -n '/Past Addresses:/,/Phone:/p' webpage_content.txt | awk 'NR>1')
+phone_numbers=$(sed -n '/Phone:/,/AKA:/p' webpage_content.txt | awk 'NR>1')
+aliases=$(sed -n '/AKA:/,/Relatives:/p' webpage_content.txt | awk 'NR>1')
+relatives=$(sed -n '/Relatives:/,$p' webpage_content.txt | awk 'NR>1')
+
+# Escape single quotes in the extracted data
+full_name="${full_name//\'/\'\'}"
+current_address="${current_address//\'/\'\'}"
+past_addresses="${past_addresses//\'/\'\'}"
+phone_numbers="${phone_numbers//\'/\'\'}"
+aliases="${aliases//\'/\'\'}"
+relatives="${relatives//\'/\'\'}"
+
+# Insert data into SQLite database
+insert_data "$full_name', '$current_address', '$past_addresses', '$phone_numbers', '$aliases', '$relatives"
+
+# Clean up: Remove the temporary file
+rm webpage_content.txt

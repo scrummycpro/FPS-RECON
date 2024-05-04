@@ -1,0 +1,34 @@
+#!/bin/bash 
+w3m -cookie -dump https://www.fastpeoplesearch.com/"$1"> "$1".txt
+
+# Grab Full Name
+grep  -A2 "Full Name" "$1".txt 
+
+echo " "
+
+# Grab Age
+
+grep -A2 "Age" "$1".txt|grep -v -i fast|grep -v -i Fair|grep  -v -i credit
+
+echo " "
+
+# Grab Registered Address (may be out of date)
+grep -A4 "Current Home Address" "$1".txt
+
+echo " "
+# Grab all Past Addresses
+
+grep -A15 "Past Addresses" "$1".txt
+echo " "
+
+# Grab all Phone Numbers
+
+grep -A10 "Phone Numbers" "$1".txt
+
+echo " "
+
+# Grab all Relatives
+
+grep -A6 "Relatives" "$1".txt
+
+echo " "

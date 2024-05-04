@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Database file
+database_file="people_data.db"
+
+# Create SQLite database file and table if they don't exist
+sqlite3 "$database_file" <<EOF
+CREATE TABLE IF NOT EXISTS people (
+    id INTEGER PRIMARY KEY,
+    full_name TEXT,
+    age TEXT,
+    current_address TEXT,
+    past_addresses TEXT,
+    phone_numbers TEXT,
+    relatives TEXT
+);
+EOF
+
+# Function to insert data into SQLite database
+insert_data() {
+    sqlite3 "$database_file" <<EOF
+    INSERT INTO people (full_name, age, current_address, past_addresses, phone_numbers, relatives)
+    VALUES ('$1', '$2', '$3', '$4', '$5', '$6');
+EOF
+}
+
+# Run w3m to retrieve webpage content and save it to a file
+w3m -cookie -dump "https://www.fastpeoplesearch.com/$1" > "$1.txt"
+
+# Extract relevant information using grep and sed
+full_name=$(grep -A2 "Full Name" "$1.txt" | tail -n 1)
+age=$(grep -A2 "Age" "$1.txt" | grep -v -i fast | grep -v -i Fair | grep  -v -i credit | tail -n 2)
+current_address=$(grep -A4 "Current Home Address" "$1.txt" | tail -n 1)
+past_addresses=$(grep -A15 "Past Addresses" "$1.txt" | tail -n +4)
+phone_numbers=$(grep -A10 "Phone:" "$1.txt")
+relatives=$(grep -A6 "Relatives" "$1.txt" | tail -n +3)
+
+# Insert data into SQLite database
+insert_data "$full_name" "$age" "$current_address" "$past_addresses" "$phone_numbers" "$relatives"
+
+# Clean up: Remove the temporary file
+rm "$1.txt"
